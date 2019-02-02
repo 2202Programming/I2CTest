@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -26,11 +27,10 @@ public class Robot extends TimedRobot {
   private static final String kCustomAuto = "My Auto";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
-  private I2C I2CBus = new I2C(port, deviceAddress));
-  short cX = 0, cY = 0, cZ = 0;
 
-    byte[] dataBuffer = new byte[6];
-    ByteBuffer compBuffer = ByteBuffer.wrap(dataBuffer);
+  private int tof_1_address = 41;
+  private I2C I2CBus;
+  
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
@@ -40,6 +40,10 @@ public class Robot extends TimedRobot {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
+    
+    I2CBus = new I2C(Port.kOnboard, tof_1_address);
+    enableTOF();
+
   }
 
   /**
@@ -101,21 +105,47 @@ public class Robot extends TimedRobot {
   @Override
   public void testPeriodic() {
   }
+
   public void operatorControl(){
-    I2CBus.write(port, port);
+    
     	   
     while (isOperatorControl() && isEnabled()) {
-    	I2CBus.read(port, 6, dataBuffer);
-      	
-      compBuffer.order(ByteOrder.BIG_ENDIAN);
-              	
-      cX = compBuffer.getShort();
-      cY = compBuffer.getShort();
-    	cZ = compBuffer.getShort();
-	
-    	SmartDashboard.putNumber("CompX", cX);
-      SmartDashboard.putNumber("CompY", cY);
-      SmartDashboard.putNumber("CompZ", cZ);
+      
+    	SmartDashboard.putNumber("TOD 1 Distance", readTOF());
+
     }
   }
+
+  public int readTOF() {
+    int RESULT_ADDRESS = 255;
+    byte[] dataBuffer = new byte[6];
+    ByteBuffer compBuffer = ByteBuffer.wrap(dataBuffer);
+    int distance;
+
+    I2CBus.read(RESULT_ADDRESS, 6, dataBuffer);
+
+    compBuffer.order(ByteOrder.BIG_ENDIAN);
+              	
+    distance = compBuffer.getShort();
+
+    return distance;
+
+  }
+
+  public void enableTOF() {
+    int SYSTEM_MODE_START_ADDRESS = 135;
+    int START_COMMAND = 64;
+
+    I2CBus.write(SYSTEM_MODE_START_ADDRESS, START_COMMAND);
+
+  }
+
+  public void disableTOF() {
+    int SYSTEM_MODE_START_ADDRESS = 135;
+    int STOP_COMMAND = 128;
+
+    I2CBus.write(SYSTEM_MODE_START_ADDRESS, STOP_COMMAND);
+
+  }
+
 }
