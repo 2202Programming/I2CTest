@@ -28,8 +28,13 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
-  private int tof_1_address = 41;
-  private I2C I2CBus;
+    private I2C I2CBus;
+
+  private int tof_1_address = 82;
+  private int RESULT_ADDRESS = 150;
+  private int SYSTEM_MODE_START_ADDRESS = 135;
+  private int START_COMMAND = 64;
+  private int STOP_COMMAND = 0;
   
   /**
    * This function is run when the robot is first started up and should be
@@ -42,8 +47,17 @@ public class Robot extends TimedRobot {
     SmartDashboard.putData("Auto choices", m_chooser);
     
     I2CBus = new I2C(Port.kOnboard, tof_1_address);
-    enableTOF();
+    
+  }
 
+  @Override
+  public void teleopInit() {
+    enableTOF();
+  }
+
+  @Override
+  public void disabledInit() {
+    disableTOF();
   }
 
   /**
@@ -97,6 +111,9 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
+    Short results = readTOF();
+    SmartDashboard.putNumber("TOF 1 Distance", results);
+    System.out.println("Distance = " + results);
   }
 
   /**
@@ -107,23 +124,15 @@ public class Robot extends TimedRobot {
   }
 
   public void operatorControl(){
-    
-    	   
-    while (isOperatorControl() && isEnabled()) {
-      int results = readTOF();
-      SmartDashboard.putNumber("TOD 1 Distance", results);
-      System.out.println(results);
-
-    }
   }
 
-  public int readTOF() {
-    int RESULT_ADDRESS = 255;
-    byte[] dataBuffer = new byte[6];
+  public Short readTOF() {
+    
+    byte[] dataBuffer = new byte[2];
     ByteBuffer compBuffer = ByteBuffer.wrap(dataBuffer);
-    int distance;
+    Short distance;
 
-    I2CBus.read(RESULT_ADDRESS, 6, dataBuffer);
+    I2CBus.read(RESULT_ADDRESS, 2, dataBuffer);
 
     compBuffer.order(ByteOrder.BIG_ENDIAN);
               	
@@ -134,18 +143,17 @@ public class Robot extends TimedRobot {
   }
 
   public void enableTOF() {
-    int SYSTEM_MODE_START_ADDRESS = 135;
-    int START_COMMAND = 64;
+
 
     I2CBus.write(SYSTEM_MODE_START_ADDRESS, START_COMMAND);
-
+    System.out.println("TOF Enabled.");
   }
 
   public void disableTOF() {
-    int SYSTEM_MODE_START_ADDRESS = 135;
-    int STOP_COMMAND = 128;
+
 
     I2CBus.write(SYSTEM_MODE_START_ADDRESS, STOP_COMMAND);
+    System.out.println("TOF Disabled.");
 
   }
 
