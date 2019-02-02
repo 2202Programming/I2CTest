@@ -110,8 +110,9 @@ public class Robot extends TimedRobot {
     
     	   
     while (isOperatorControl() && isEnabled()) {
-      
-    	SmartDashboard.putNumber("TOD 1 Distance", readTOF());
+      int results = readTOF();
+      SmartDashboard.putNumber("TOD 1 Distance", results);
+      System.out.println(results);
 
     }
   }
