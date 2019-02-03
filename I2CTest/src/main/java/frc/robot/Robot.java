@@ -28,14 +28,23 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
-    private I2C I2CBus;
-
+  private I2C I2CBus;
+/*
   private int tof_1_address = 82;
   private int RESULT_ADDRESS = 150;
   private int SYSTEM_MODE_START_ADDRESS = 135;
   private int START_COMMAND = 64;
   private int STOP_COMMAND = 0;
-  
+  private int SYSTEM_ID_ADDRESS = 271;
+  */
+
+  private int tof_1_address = 0x52;
+  private int RESULT_ADDRESS = 0x0096;
+  private int SYSTEM_MODE_START_ADDRESS = 0x0087;
+  private int START_COMMAND = 0x40;
+  private int STOP_COMMAND = 0x00;
+  private int SYSTEM_ID_ADDRESS = 0x10F;
+
   /**
    * This function is run when the robot is first started up and should be
    * used for any initialization code.
@@ -46,18 +55,32 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
     
+    //Initialize I2C for TOF1 and perform reality checks
     I2CBus = new I2C(Port.kOnboard, tof_1_address);
-    
+    if (I2CBus == null) System.out.println("TOF1 failed init - Null I2C.");
+    else System.out.println("TOF1 passed init.");
+    if (!I2CBus.addressOnly()) System.out.println("TOF1 failed init - address ping fail");
+    else System.out.println("TOF1 passed address ping.");
+    if (readID(I2CBus) == 61100) System.out.println("TOF1 passed ID check.");
+    else System.out.println("TOF1 Chip ID failed (should be 61100) = " + readID(I2CBus));
+
   }
 
   @Override
   public void teleopInit() {
-    enableTOF();
+
+    I2C testBus;
+    for(int i=0; i < 100; i++) {
+      testBus = new I2C(Port.kOnboard, i);
+      System.out.println("Address Check at " + i + ": " + testBus.addressOnly());
+    }
+
+    enableTOF(I2CBus);
   }
 
   @Override
   public void disabledInit() {
-    disableTOF();
+    disableTOF(I2CBus);
   }
 
   /**
@@ -111,9 +134,9 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void teleopPeriodic() {
-    Short results = readTOF();
+    Short results = readTOF(I2CBus);
     SmartDashboard.putNumber("TOF 1 Distance", results);
-    System.out.println("Distance = " + results);
+    if (results > 0) System.out.println("Distance = " + results);
   }
 
   /**
@@ -126,35 +149,44 @@ public class Robot extends TimedRobot {
   public void operatorControl(){
   }
 
-  public Short readTOF() {
+  public Short readTOF(I2C bus) {
     
     byte[] dataBuffer = new byte[2];
     ByteBuffer compBuffer = ByteBuffer.wrap(dataBuffer);
-    Short distance;
 
-    I2CBus.read(RESULT_ADDRESS, 2, dataBuffer);
+    //Read in two-byte integer 
+    bus.read(RESULT_ADDRESS, 2, dataBuffer);
 
+    //convert to short
     compBuffer.order(ByteOrder.BIG_ENDIAN);
-              	
-    distance = compBuffer.getShort();
 
-    return distance;
+    return compBuffer.getShort();
 
   }
 
-  public void enableTOF() {
+  public void enableTOF(I2C bus) {
 
-
-    I2CBus.write(SYSTEM_MODE_START_ADDRESS, START_COMMAND);
+    bus.write(SYSTEM_MODE_START_ADDRESS, START_COMMAND);
     System.out.println("TOF Enabled.");
   }
 
-  public void disableTOF() {
+  public void disableTOF(I2C bus) {
 
-
-    I2CBus.write(SYSTEM_MODE_START_ADDRESS, STOP_COMMAND);
+    bus.write(SYSTEM_MODE_START_ADDRESS, STOP_COMMAND);
     System.out.println("TOF Disabled.");
+  }
 
+
+  public Short readID(I2C bus) {
+    
+    byte[] dataBuffer = new byte[2];
+    ByteBuffer compBuffer = ByteBuffer.wrap(dataBuffer);
+
+    //read two-byte integer, convert to short
+    bus.read(SYSTEM_ID_ADDRESS, 2, dataBuffer);
+    compBuffer.order(ByteOrder.BIG_ENDIAN);
+          
+    return compBuffer.getShort();
   }
 
 }
