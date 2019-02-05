@@ -28,6 +28,7 @@ public class Robot extends TimedRobot {
   private SerialPort arduinoSerial;
   private int distance1;
   private int distance2;
+  private long distanceRefresh;
   
 
   @Override
@@ -36,8 +37,8 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
     
-    arduinoSerial = new SerialPort(9600, SerialPort.Port.kUSB);
-    
+    arduinoSerial = new SerialPort(115200, SerialPort.Port.kUSB);
+    distanceRefresh = System.currentTimeMillis();
 
   }
 
@@ -156,7 +157,11 @@ public class Robot extends TimedRobot {
           
             serialResults="";
             distance = distance1-distance2;   
-            System.out.println("Sensor#1: " + distance1 + "mm, Sensor#2: " + distance2 + ", Diff=" + distance);
+            
+            Long refreshTime = System.currentTimeMillis() - distanceRefresh;
+            distanceRefresh = System.currentTimeMillis();
+            Float refresh = 1000 / refreshTime.floatValue();
+            System.out.println("Sensor#1: " + distance1 + "mm, Sensor#2: " + distance2 + "mm, Diff=" + distance + "mm, Refresh:" + refresh + "Hz");
           }
         }
       
