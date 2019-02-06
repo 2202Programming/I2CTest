@@ -37,7 +37,7 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
     
-    arduinoSerial = new SerialPort(115200, SerialPort.Port.kUSB);
+    arduinoSerial = new SerialPort(9600, SerialPort.Port.kUSB);
     distanceRefresh = System.currentTimeMillis();
 
   }
@@ -160,8 +160,18 @@ public class Robot extends TimedRobot {
             
             Long refreshTime = System.currentTimeMillis() - distanceRefresh;
             distanceRefresh = System.currentTimeMillis();
-            Float refresh = 1000 / refreshTime.floatValue();
-            System.out.println("Sensor#1: " + distance1 + "mm, Sensor#2: " + distance2 + "mm, Diff=" + distance + "mm, Refresh:" + refresh + "Hz");
+            
+            SmartDashboard.putNumber("Sensor #1 (mm)", distance1);
+            SmartDashboard.putNumber("Sensor #2 (mm)", distance2);
+            SmartDashboard.putNumber("Sensor diff (mm)", distance);
+            long hertz=0;
+            if (refreshTime>0) hertz = 1000/refreshTime;
+            SmartDashboard.putNumber("Refresh Rate (Hz)", (int)hertz);
+            
+            
+            
+
+            //System.out.println("Sensor#1: " + distance1 + "mm, Sensor#2: " + distance2 + "mm, Diff=" + distance + "mm, Refresh:" + refresh + "Hz");
           }
         }
       
